@@ -20,7 +20,7 @@ class NetController:
           ]
         }
 
-    For usage example, check out net_controller_tests.py.
+    For usage example, check out netcontroller_tests.py.
 
     Note that the tests assume we are testing on a local network, thus UDP packets
     are ordered. This library has not been testing in a non-local environment.

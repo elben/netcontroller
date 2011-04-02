@@ -1,6 +1,6 @@
 import time
 import unittest
-from net_controller import *
+from netcontroller import *
 
 CONFIG = """
     {
