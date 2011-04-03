@@ -3,10 +3,24 @@ from threading import Thread
 import json
 import Queue
 
+
+def build_payload(from_proc, to_proc, client_payload):
+    """
+    Builds a JSON payload.
+
+    from_proc and to_proc can be anything (integer, str).
+    client_payload should be a dict.
+    """
+    payload = json.dumps({
+        'from_proc': from_proc,
+        'to_proc': to_proc,
+        'msg': client_payload},)
+    return payload
+
 class NetController:
     """
-    UDP. Async, thread-safe queues. Ghetto-simple configuration.
-    What else could you ask for? (Bug-freeness, maybe.)
+    UDP. Async, thread-safe queues. Ghetto-simple configuration. JSON-based
+    message passing. What else could you ask for? (Bug-freeness, maybe.)
 
     Author: Elben Shira <elbenshira@gmail.com>
 
@@ -46,13 +60,13 @@ class NetController:
         self.listener.daemon = True
         self.listener.start()
 
-    def send(self, proc_id, msg):
+    def send(self, to_proc, client_payload):
         """
-        Sends a message to proc_id.
+        Sends a message to to_proc.
         """
 
-        payload = self._create_msg(proc_id, msg)
-        self.sock.sendto(payload, self.config.proc_addr(proc_id))
+        payload = build_payload(self.proc_id, to_proc, client_payload)
+        self.sock.sendto(payload, self.config.proc_addr(to_proc))
 
     def send_all(self, msg, exclude_self=True):
         """
@@ -60,20 +74,26 @@ class NetController:
         If exclude_self is True, send it to ourself too.
         """
 
-        for proc_id, proc in enumerate(self.config.proc_addrs()):
-            if exclude_self and proc_id == self.proc_id:
+        for to_proc, proc in enumerate(self.config.proc_addrs()):
+            if exclude_self and to_proc == self.proc_id:
                 continue
-            payload = self._create_msg(proc_id, msg)
+            payload = build_payload(self.proc_id, to_proc, msg)
             self.sock.sendto(payload, tuple(proc))
 
-    def next(self, block=False):
+    def next(self, block=False, timeout=None):
         """
         Returns the first (from_addr, msg) tuple in the queue.
+          from_addr - a tuple (ip, port)
+          msg - a dictionary.
+
         If `block` is True, this method will block until a message is available.
+        Otherwise, returns None is no message is available.
+
+        By default, the timeout is infinite.
         """
 
         try:
-            addr, payload = self.queue.get(block)
+            addr, payload = self.queue.get(block, timeout)
             return addr, json.loads(payload)
         except Queue.Empty:
             return None
@@ -81,13 +101,6 @@ class NetController:
     def shutdown(self):
         self.shared_state['alive'] = False
         self.listener.join()
-
-    def _create_msg(self, to_proc, msg):
-        payload = json.dumps({
-            'from_proc': self.proc_id,
-            'to_proc': to_proc,
-            'msg': msg},)
-        return payload
 
 class ListenServer(Thread):
     def __init__(self, shared_state, queue, port, ip='127.0.0.1', timeout=1, *args, **kwargs):
@@ -105,8 +118,8 @@ class ListenServer(Thread):
         from_addr = None
         while self.shared_state['alive']:
             try:
-                msg, from_addr = self.sock.recvfrom(4096)
-                self.queue.put((from_addr, msg))
+                payload, from_addr = self.sock.recvfrom(4096)
+                self.queue.put((from_addr, payload))
             except socket.timeout:
                 pass
         self.sock.close()
