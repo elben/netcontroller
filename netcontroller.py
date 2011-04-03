@@ -126,10 +126,16 @@ class Config:
         return addrs
 
     def proc_addr(self, proc_id):
+        """
+        Returns (ip, port) tuple.
+        """
         proc = self.proc(proc_id)
         return (proc['ip'], proc['port'])
 
     def proc(self, proc_id):
+        """
+        Returns the raw process configuration, as seen in the JSON config file.
+        """
         if len(self._procs) > proc_id:
             return self._procs[proc_id]
         else:
