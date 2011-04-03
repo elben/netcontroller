@@ -34,23 +34,29 @@ class TestNetController(unittest.TestCase):
         # Check each net controller got right messages
 
         addr, payload = self.nc0.next()
+        payload = json.loads(payload)
         self.assertEquals(payload['to_proc'], 0)
         self.assertEquals(payload['from_proc'], 0)
         self.assertEquals(payload['msg'], 'send to all')
 
         addr, payload = self.nc0.next()
+        payload = json.loads(payload)
         self.assertEquals(payload['msg'], 'send to all again')
         addr, payload = self.nc0.next()
+        payload = json.loads(payload)
         self.assertEquals(payload['msg'], 'again and again and again')
 
         addr, payload = self.nc1.next()
+        payload = json.loads(payload)
         self.assertEquals(payload['to_proc'], 1)
         self.assertEquals(payload['from_proc'], 0)
         self.assertEquals(payload['msg'], 'send to all')
 
         addr, payload = self.nc1.next()
+        payload = json.loads(payload)
         self.assertEquals(payload['msg'], 'send to all again')
         addr, payload = self.nc1.next()
+        payload = json.loads(payload)
         self.assertEquals(payload['msg'], 'again and again and again')
 
     def test_send_all_exclude_self(self):
@@ -64,25 +70,28 @@ class TestNetController(unittest.TestCase):
         # Check each net controller got right messages
 
         data_recv = self.nc1.next()
-        self.assertIsNotNone(data_recv)
+        self.assertNotEqual(data_recv, None)
 
         addr, payload = data_recv
+        payload = json.loads(payload)
         self.assertEquals(payload['to_proc'], 1)
         self.assertEquals(payload['from_proc'], 0)
         self.assertEquals(payload['msg'], 'send to all')
 
         addr, payload = self.nc1.next()
+        payload = json.loads(payload)
         self.assertEquals(payload['msg'], 'send to all again')
 
         addr, payload = self.nc1.next()
+        payload = json.loads(payload)
         self.assertEquals(payload['msg'], 'again and again and again')
 
-        self.assertIsNone(self.nc0.next())
+        self.assertEqual(self.nc0.next(), None)
 
     def test_send(self):
         # No messages in queue
-        self.assertIsNone(self.nc0.next())
-        self.assertIsNone(self.nc1.next())
+        self.assertEqual(self.nc0.next(), None)
+        self.assertEqual(self.nc1.next(), None)
 
         # Send stuff
         self.nc0.send(1, "test1")
@@ -95,28 +104,32 @@ class TestNetController(unittest.TestCase):
         # Check each net controller got right messages
 
         addr, payload = self.nc0.next()
+        payload = json.loads(payload)
         self.assertEquals(payload['to_proc'], 0)
         self.assertEquals(payload['from_proc'], 1)
         self.assertEquals(payload['msg'], 'test3')
 
         addr, payload = self.nc0.next()
+        payload = json.loads(payload)
         self.assertEquals(payload['to_proc'], 0)
         self.assertEquals(payload['from_proc'], 1)
         self.assertEquals(payload['msg'], 'test4')
 
         addr, payload = self.nc1.next()
+        payload = json.loads(payload)
         self.assertEquals(payload['to_proc'], 1)
         self.assertEquals(payload['from_proc'], 0)
         self.assertEquals(payload['msg'], 'test1')
 
         addr, payload = self.nc1.next()
+        payload = json.loads(payload)
         self.assertEquals(payload['to_proc'], 1)
         self.assertEquals(payload['from_proc'], 0)
         self.assertEquals(payload['msg'], 'test2')
         
         # We should run out of messages
-        self.assertIsNone(self.nc0.next())
-        self.assertIsNone(self.nc1.next())
+        self.assertEqual(self.nc0.next(), None)
+        self.assertEqual(self.nc1.next(), None)
 
 class TestConfig(unittest.TestCase):
     def setUp(self):

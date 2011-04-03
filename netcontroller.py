@@ -24,7 +24,14 @@ class NetController:
 
     Author: Elben Shira <elbenshira@gmail.com>
 
-    Configuration is in JSON format. Here is an example:
+    =====================
+    CONFIGURATION
+    =====================
+
+    Configuration is in JSON format. You can either pass in a string or specify
+    a path to a file.
+    
+    Here is an example:
 
         {
           "procs": [
@@ -34,10 +41,24 @@ class NetController:
           ]
         }
 
+    =====================
+    USAGE
+    =====================
+
     For usage example, check out netcontroller_tests.py.
 
+    NetController passes everything as JSON-formatted messages. So when you call
+    send(), NetController expects your payload to be a Python object that can be
+    converted to JSON (e.g. int, string, dict).
+
+    =====================
+    WARNINGS & NOTES
+    =====================
+    
     The ListenServer thread is a daemon thread. This allows the Python
     interpreter to quit when only daemon threads are around.
+
+    The default buffer size is 4096 bytes!
 
     Note that the tests assume we are testing on a local network, thus UDP packets
     are ordered. This library has not been testing in a non-local environment.
@@ -84,7 +105,7 @@ class NetController:
         """
         Returns the first (from_addr, msg) tuple in the queue.
           from_addr - a tuple (ip, port)
-          msg - a dictionary.
+          msg - a string
 
         If `block` is True, this method will block until a message is available.
         Otherwise, returns None is no message is available.
@@ -94,7 +115,7 @@ class NetController:
 
         try:
             addr, payload = self.queue.get(block, timeout)
-            return addr, json.loads(payload)
+            return addr, payload
         except Queue.Empty:
             return None
 
@@ -103,7 +124,8 @@ class NetController:
         self.listener.join()
 
 class ListenServer(Thread):
-    def __init__(self, shared_state, queue, port, ip='127.0.0.1', timeout=1, *args, **kwargs):
+    def __init__(self, shared_state, queue, port, ip='127.0.0.1', timeout=1,
+            bufsize=4096, *args, **kwargs):
         Thread.__init__(self, *args, **kwargs)  # must be called first
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.settimeout(timeout)
@@ -111,6 +133,7 @@ class ListenServer(Thread):
         self.ip = ip
         self.port = port
         self.shared_state = shared_state
+        self.bufsize = bufsize
 
     def run(self):
         self.sock.bind((self.ip, self.port))
@@ -118,7 +141,7 @@ class ListenServer(Thread):
         from_addr = None
         while self.shared_state['alive']:
             try:
-                payload, from_addr = self.sock.recvfrom(4096)
+                payload, from_addr = self.sock.recvfrom(self.bufsize)
                 self.queue.put((from_addr, payload))
             except socket.timeout:
                 pass
