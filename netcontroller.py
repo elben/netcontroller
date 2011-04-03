@@ -22,6 +22,9 @@ class NetController:
 
     For usage example, check out netcontroller_tests.py.
 
+    The ListenServer thread is a daemon thread. This allows the Python
+    interpreter to quit when only daemon threads are around.
+
     Note that the tests assume we are testing on a local network, thus UDP packets
     are ordered. This library has not been testing in a non-local environment.
     """
@@ -37,7 +40,10 @@ class NetController:
 
         # Spawn listener thread.
         self.shared_state = {'alive': True}
-        self.listener = ListenServer(self.shared_state, self.queue, self.config.proc(self.proc_id)['port'])
+        self.listener = ListenServer(self.shared_state,
+                self.queue,
+                self.config.proc(self.proc_id)['port'],)
+        self.listener.daemon = True
         self.listener.start()
 
     def send(self, proc_id, msg):
