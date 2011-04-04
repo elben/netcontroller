@@ -181,7 +181,7 @@ class Config:
         if len(self._procs) > proc_id:
             return self._procs[proc_id]
         else:
-            raise Exception("No process with number %d." % p);
+            raise Exception("No process with number %d." % proc_id);
 
     def num_procs(self):
         return len(self._procs)
