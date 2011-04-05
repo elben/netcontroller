@@ -103,8 +103,8 @@ class NetController:
 
             payload = build_payload(self.proc_id, to_proc, msg)
 
-            if delay_callback:
-                delay_callback()
+            if delay_func:
+                delay_func()
 
             self.sock.sendto(payload, tuple(proc))
 
