@@ -89,10 +89,12 @@ class NetController:
         payload = build_payload(self.proc_id, to_proc, client_payload)
         self.sock.sendto(payload, self.config.proc_addr(to_proc))
 
-    def send_all(self, msg, exclude_self=True, delay_each=0):
+    def send_all(self, msg, exclude_self=True, delay_func=None):
         """
         Sends a message to all known procs.
         If exclude_self is True, send it to ourself too.
+
+        delay_func is a function that gets called before each sendto is called.
         """
 
         for to_proc, proc in enumerate(self.config.proc_addrs()):
@@ -101,9 +103,8 @@ class NetController:
 
             payload = build_payload(self.proc_id, to_proc, msg)
 
-            if delay_each > 0:
-                print "Delaying for %d seconds." % (delay_each,)
-                time.sleep(delay_each)
+            if delay_callback:
+                delay_callback()
 
             self.sock.sendto(payload, tuple(proc))
 
