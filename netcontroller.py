@@ -97,8 +97,8 @@ class NetController:
 
         delay_func is a function that gets called before each sendto is called.
         start - start sending to this process first
-        num - send to this many processes, starting from start. Defaults to -1,
-              which is all processes
+        num - send to this many processes, starting from start. Defaults to
+              None, which is all processes.
         """
 
         num_procs = self.config.num_procs()
