@@ -4,18 +4,23 @@ import json
 import Queue
 
 
-def build_payload(from_proc, to_proc, client_payload):
+def build_payload(from_proc, to_proc, client_payload, **kwargs):
     """
     Builds a JSON payload.
 
     from_proc and to_proc can be anything (integer, str).
     client_payload should be a dict.
     """
-    payload = json.dumps({
+    payload = {
         'from_proc': from_proc,
         'to_proc': to_proc,
-        'msg': client_payload},)
-    return payload
+        'msg': client_payload,
+    }
+    payload.update(kwargs)
+    payload['msg'] = client_payload
+
+    payload_json = json.dumps(payload)
+    return payload_json
 
 class NetController:
     """
