@@ -122,7 +122,7 @@ class NetController:
 
             self.sock.sendto(payload, tuple(proc))
 
-    def next(self, block=False, timeout=None):
+    def next(self, block=False, timeout=None, condition=None):
         """
         Returns the first (from_addr, msg) tuple in the queue.
           from_addr - a tuple (ip, port)
@@ -131,12 +131,22 @@ class NetController:
         If `block` is True, this method will block until a message is available.
         Otherwise, returns None is no message is available.
 
-        By default, the timeout is infinite.
+        If blocking, the `timeout` is how long we wait for a message before
+        timing out. By default, the timeout is infinite.
+
+        `condition` is a function that takes one argument, the payload received.
+        If `condition` returns True, we return the payload. Otherwise, we put
+        the payload to the back of the queue and immediately return None.
         """
 
         try:
             addr, payload = self.queue.get(block, timeout)
-            return addr, payload
+            if condition is None or condition(payload):
+                return addr, payload
+            else:
+                # Condition not met
+                self.queue.put((addr, payload))
+                return None
         except Queue.Empty:
             return None
 
