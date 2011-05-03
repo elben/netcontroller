@@ -2,6 +2,7 @@ import socket
 from threading import Thread
 import json
 import Queue
+import random
 
 
 def build_payload(from_proc, to_proc, client_payload, **kwargs):
@@ -127,6 +128,13 @@ class NetController:
 
     def exists(self, name):
         self.config.exists(name)
+
+    def random(self):
+        """
+        Returns a random server name.
+        """
+        i = random.randint(0, self.config.num_procs()-1)
+        return self.config._procs.keys()[i]
 
     def send(self, to_proc, client_payload):
         """
