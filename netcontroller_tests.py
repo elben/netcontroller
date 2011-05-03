@@ -159,13 +159,19 @@ class TestConfig(unittest.TestCase):
     def test_remove(self):
         orig_num = self.config.num_procs()
 
-        self.config.add("localhost", 3333)
-        self.config.add("elbenshira.com", 80)
+        self.config.add("localhost", 3333, name="proc10")
+        self.config.add("elbenshira.com", 80, name="proc11")
 
-        self.config.remove("localhost", 3333)
-        self.config.remove("elbenshira.com", 80)
+        self.config.remove("proc10")
+        self.config.remove("proc11")
 
         self.assertEquals(self.config.num_procs(), orig_num)
+
+    def test_exists(self):
+        self.config.add("localhost", 3333, name="proc10")
+
+        self.assertTrue(self.config.exists("proc10"))
+        self.assertTrue(self.config.exists(0))
 
 if __name__ == "__main__":
     unittest.main()

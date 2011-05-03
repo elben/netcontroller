@@ -46,6 +46,39 @@ class NetController:
           ]
         }
 
+    In the configuration above, you access the processes via integers. That is:
+
+        >>> nc.proc(1)
+        {"ip": "127.0.0.1", "port": 10001}
+
+    NetController can also take in a more general form of configuration:
+
+        {
+          "procs": {
+            "proc1": {"ip": "127.0.0.1", "port": 10000},
+            "proc2": {"ip": "127.0.0.1", "port": 10001},
+            "proc3": {"ip": "127.0.0.1", "port": 10002}
+          }
+        }
+
+    You may not have a configured set of known processes. NetController can
+    handle this. You just need to pass in a config with only your information in
+    it:
+
+        config_data = {
+          "procs": {
+            "proc1": {"ip": "127.0.0.1", "port": 10000}
+          }
+        }
+        nc = NetController(proc_id, config_data=config_data)
+
+    Then, you can add and remove new processes:
+
+        >>> nc.add("proc1", "localhost", 10002)
+        >>> nc.exists("proc1")
+        True
+        >>> nc.remove("proc1")
+
     =====================
     USAGE
     =====================
@@ -86,6 +119,15 @@ class NetController:
         self.listener.daemon = True
         self.listener.start()
 
+    def add(self, ip, port, name=None):
+        self.config.add(ip, port, name)
+
+    def remove(self, name):
+        self.config.remove(name)
+
+    def exists(self, name):
+        self.config.exists(name)
+
     def send(self, to_proc, client_payload):
         """
         Sends a message to to_proc.
@@ -108,9 +150,10 @@ class NetController:
 
         num_procs = self.config.num_procs()
         num = num if num else num_procs
+        proc_addrs = self.config.proc_addrs()
         for i in range(start, start+num):
             to_proc = i % self.config.num_procs()
-            proc = self.config.proc_addrs()[to_proc]
+            proc = proc_addrs[to_proc]
 
             if exclude_self and to_proc == self.proc_id:
                 continue
@@ -180,36 +223,47 @@ class ListenServer(Thread):
 
 class Config:
     def __init__(self, config_data=None, config_path='config.json'):
-        self._procs = []
+        self._procs = {}
         if config_data:
-            config_json = json.loads(config_data)
+            config_data = json.loads(config_data)
         else:
-            config_json = json.load(open(config_path))
+            config_data = json.load(open(config_path))
 
-        if 'procs' in config_json:
-            self._procs = config_json['procs']
+        if 'procs' in config_data:
+            procs = config_data['procs']
+            if type(procs) == dict:
+                self._procs = procs
+            else:
+                for i, p in enumerate(procs):
+                    self._procs[i] = p
 
-    def add(self, ip, port):
+    def add(self, ip, port, name=None):
         """
-        Adds a new process (ip, port) into the system.
+        Adds a new process (ip, port) into the system. If name is not provided,
+        the process name will be the current number of processes.
         """
-        self._procs.append({'ip': ip, 'port': port})
+        name = name if name else self.num_procs()
+        self._procs[name] = {'ip': ip, 'port': port}
 
-    def remove(self, ip, port):
+    def remove(self, name):
         """
-        Removes process (ip, port) from system.
+        Removes process name from system.
         """
-        for i, p in enumerate(self._procs):
-            if p['ip'] == ip and p['port'] == port:
-                del self._procs[i]
+        del self._procs[name]
+
+    def exists(self, name):
+        """
+        Returns true if name is a known process.
+        """
+        return name in self._procs
 
     def procs(self):
         return self._procs
 
     def proc_addrs(self):
         addrs = []
-        for proc in self.procs():
-            addrs.append((proc['ip'], proc['port']))
+        for proc_name, proc_meta in self.procs().iteritems():
+            addrs.append((proc_meta['ip'], proc_meta['port']))
         return addrs
 
     def proc_addr(self, proc_id):
@@ -223,10 +277,10 @@ class Config:
         """
         Returns the raw process configuration, as seen in the JSON config file.
         """
-        if len(self._procs) > proc_id:
+        if self.exists(proc_id):
             return self._procs[proc_id]
         else:
-            raise Exception("No process with number %s." % str(proc_id));
+            raise Exception("No process with name %s." % str(proc_id));
 
     def num_procs(self):
         return len(self._procs)
