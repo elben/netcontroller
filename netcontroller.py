@@ -189,6 +189,20 @@ class Config:
         if 'procs' in config_json:
             self._procs = config_json['procs']
 
+    def add(self, ip, port):
+        """
+        Adds a new process (ip, port) into the system.
+        """
+        self._procs.append({'ip': ip, 'port': port})
+
+    def remove(self, ip, port):
+        """
+        Removes process (ip, port) from system.
+        """
+        for i, p in enumerate(self._procs):
+            if p['ip'] == ip and p['port'] == port:
+                del self._procs[i]
+
     def procs(self):
         return self._procs
 

@@ -149,6 +149,23 @@ class TestConfig(unittest.TestCase):
 
     def test_num_procs(self):
         self.assertEquals(self.config.num_procs(), 3)
+    
+    def test_add(self):
+        self.config.add("localhost", 3333)
+        self.assertEquals(self.config.proc(3), {"ip": "localhost", "port": 3333})
+        self.config.add("elbenshira.com", 80)
+        self.assertEquals(self.config.proc(4), {"ip": "elbenshira.com", "port": 80})
+
+    def test_remove(self):
+        orig_num = self.config.num_procs()
+
+        self.config.add("localhost", 3333)
+        self.config.add("elbenshira.com", 80)
+
+        self.config.remove("localhost", 3333)
+        self.config.remove("elbenshira.com", 80)
+
+        self.assertEquals(self.config.num_procs(), orig_num)
 
 if __name__ == "__main__":
     unittest.main()
