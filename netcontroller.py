@@ -127,7 +127,7 @@ class NetController:
         self.config.remove(name)
 
     def exists(self, name):
-        self.config.exists(name)
+        return self.config.exists(name)
 
     def random(self):
         """
